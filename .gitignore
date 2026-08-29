@@ -1,0 +1,21 @@
+# Livebook 本地会话缓存
+.livebook/
+
+# Elixir 编译beam文件
+*.beam
+*.app
+*.appup
+ebin/
+deps/
+_build/
+
+# OS 文件
+.DS_Store
+Thumbs.db
+__MACOSX/
+
+# vscode
+.idea/
+.vscode/
+*.swp
+*.swo
