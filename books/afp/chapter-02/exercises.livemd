@@ -1,1 +1,193 @@
 # AFP‑Chapter02‑Exercises
+
+## Section
+
+```elixir
+defprotocol FunPark.Eq do
+  @fallback_to_any true
+
+  def eq?(a, b)
+
+  def not_eq?(a, b)
+end
+
+
+defimpl FunPark.Eq, for: Any do
+  def eq?(a, b), do: a == b
+  def not_eq?(a, b), do: a != b  
+end
+```
+
+```elixir
+defmodule FunPark.Patron do
+  defstruct id: nil,
+            name: nil,
+            age: 0,
+            height: 0,
+            ticket_tier: :basic,
+            fast_passes: [],
+            reward_points: 0,
+            likes: [],
+            dislikes: []
+
+  def make(name, age, height, opts \\ [])
+      when is_bitstring(name) and
+             is_integer(age) and
+             is_integer(height) and
+             age > 0 and
+             height > 0 do
+    %__MODULE__{
+      id: :erlang.unique_integer([:positive]),
+      name: name,
+      age: age,
+      height: height,
+      ticket_tier: Keyword.get(opts, :ticket_tier, :basic),
+      fast_passes: Keyword.get(opts, :fast_passes, []),
+      reward_points: Keyword.get(opts, :reward_points, 0),
+      likes: Keyword.get(opts, :likes, []),
+      dislikes: Keyword.get(opts, :dislikes, [])
+    }
+  end
+
+  def change(%__MODULE__{} = patron, attrs) when is_map(attrs) do
+    attrs = Map.delete(attrs, :id)
+
+    struct(patron, attrs)
+  end
+end
+```
+
+```elixir
+defimpl FunPark.Eq, for: FunPark.Patron do
+  alias FunPark.Eq
+  alias FunPark.Patron
+  def eq?(%Patron{id: v1}, %Patron{id: v2}), do: Eq.eq?(v1, v2)
+  def not_eq?(%Patron{id: v1}, %Patron{id: v2}), do: Eq.not_eq?(v1, v2)
+end
+```
+
+```elixir
+alice_a = FunPark.Patron.make("Alice",15,150)
+alice_b = FunPark.Patron.change(alice_a, %{ticket_tier: :premium})
+
+# 1. 原生 ==：全部字段逐一比对
+alice_a == alice_b
+# false ✔️ 本来就是false，这个行为不会被你的协议修改
+```
+
+```elixir
+# 2. 调用你自己定义的协议函数（业务语义相等）
+FunPark.Eq.eq?(alice_a, alice_b)
+# true ✔️ 这里才会走你写的只对比 id 的逻辑
+```
+
+```elixir
+defmodule FunPark.Ride do
+  defstruct id: nil,
+            name: "Unknown Ride",
+            min_age: 0,
+            min_height: 0,
+            wait_time: 0,
+            online: true,
+            tags: []
+
+  def make(name, opts \\ []) when is_binary(name) do
+    %__MODULE__{
+      id: :erlang.unique_integer([:positive]),
+      name: name,
+      min_age: Keyword.get(opts, :min_age, 0),
+      min_height: Keyword.get(opts, :min_height, 0),
+      wait_time: Keyword.get(opts, :wait_time, 0),
+      online: Keyword.get(opts, :online, true),
+      tags: Keyword.get(opts, :tags, [])
+    }
+  end
+
+  def change(%__MODULE__{} = ride, attrs) when is_map(attrs) do
+ 	  attrs = Map.delete(attrs, :id)
+ 	
+ 	  struct(ride, attrs)
+  end
+end
+```
+
+```elixir
+defimpl FunPark.Eq, for: FunPark.Ride do
+ 	  alias FunPark.Eq
+ 	  alias FunPark.Ride
+ 	  def eq?(%Ride{id: v1}, %Ride{id: v2}), do: Eq.eq?(v1, v2)
+ 	  def not_eq?(%Ride{id: v1}, %Ride{id: v2}), do: Eq.not_eq?(v1, v2)
+end
+```
+
+```elixir
+ride_a = FunPark.Ride.make("Dark Mansion", min_age: 14, tags: [:dark])
+```
+
+```elixir
+ride_b = FunPark.Ride.change(ride_a, %{wait_time: 20})
+```
+
+```elixir
+ride_a == ride_b
+```
+
+```elixir
+FunPark.Eq.eq?(ride_a, ride_b)
+```
+
+```elixir
+defmodule FunPark.FastPass do
+  defstruct id: nil,
+            ride: nil,
+            time: nil
+
+  def make(%FunPark.Ride{} = ride, %DateTime{} = time) do
+    %__MODULE__{
+      id: :erlang.unique_integer([:positive]),
+      ride: ride,
+      time: time
+    }
+  end
+
+  def change(%__MODULE__{} = fast_pass, attrs) when is_map(attrs) do
+    attrs = Map.delete(attrs, :id)
+    struct(fast_pass, attrs)
+  end
+end
+```
+
+```elixir
+defimpl FunPark.Eq, for: FunPark.FastPass do
+  alias FunPark.Eq
+  alias FunPark.FastPass
+
+  def eq?(%FastPass{id: v1}, %FastPass{id: v2}), do: Eq.eq?(v1, v2)
+  def not_eq?(%FastPass{id: v1}, %FastPass{id: v2}), do: Eq.not_eq?(v1, v2)
+end
+```
+
+```elixir
+tea_cup = FunPark.Ride.make("Tea Cup")
+```
+
+```elixir
+datetime = DateTime.new!(~D[2025-06-01], ~T[13:00:00])
+```
+
+```elixir
+pass_a = FunPark.FastPass.make(tea_cup, datetime)
+```
+
+```elixir
+haunted_mansion = FunPark.Ride.make("Haunted Mansion")
+pass_b = FunPark.FastPass.change(pass_a, %{ride: haunted_mansion})
+```
+
+```elixir
+pass_a == pass_b
+```
+
+```elixir
+FunPark.Eq.eq?(pass_a, pass_b)
+```
