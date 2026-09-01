@@ -3,5 +3,61 @@
 ## Section
 
 ```elixir
+defmodule FunPark.Ride do
+  defstruct id: nil,
+            name: "Unknown Ride",
+            min_age: 0,
+            min_height: 0,
+            wait_time: 0,
+            online: true,
+            tags: []
 
+  def make(name, opts \\ []) when is_binary(name) do
+    %__MODULE__{
+      id: :erlang.unique_integer([:positive]),
+      name: name,
+      min_age: Keyword.get(opts, :min_age, 0),
+      min_height: Keyword.get(opts, :min_height, 0),
+      wait_time: Keyword.get(opts, :wait_time, 0),
+      online: Keyword.get(opts, :online, true),
+      tags: Keyword.get(opts, :tags, [])
+    }
+  end
+end
+```
+
+```elixir
+FunPark.Ride.make("Tea Cup", wait_time: 10, tags: [:family_friendly])
+```
+
+```elixir
+dark_mansion = FunPark.Ride.make(
+  "Dark Mansion",
+  min_age: 14,
+  tags: [:dark]
+)
+```
+
+```elixir
+defmodule FunPark.FastPass do
+  defstruct id: nil,
+            ride: nil,
+            time: nil
+
+  def make(%FunPark.Ride{} = ride, %DateTime{} = time) do
+    %__MODULE__{
+      id: :erlang.unique_integer([:positive]),
+      ride: ride,
+      time: time
+    }
+  end
+end
+```
+
+```elixir
+datetime = ~U[2025-06-01 13:00:00Z]
+```
+
+```elixir
+fast_pass = FunPark.FastPass.make(dark_mansion, datetime)
 ```
