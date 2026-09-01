@@ -137,6 +137,17 @@ FunPark.Eq.eq?(ride_a, ride_b)
 ```
 
 ```elixir
+defmodule FunPark.Eq.Utils do
+  def contramap(f) do
+    %{
+      eq?: fn a, b -> FunPark.Eq.eq?(f.(a), f.(b)) end,
+      not_eq?: fn a, b -> FunPark.Eq.not_eq?(f.(a), f.(b)) end
+    }
+  end
+end
+```
+
+```elixir
 defmodule FunPark.FastPass do
   defstruct id: nil,
             ride: nil,
@@ -159,7 +170,7 @@ defmodule FunPark.FastPass do
   def get_time(%__MODULE__{time: time}), do: time
 
   def eq_time do
-    Eq.Utils.contramap(&get_time/1)
+    FunPark.Eq.Utils.contramap(&get_time/1)
   end
 end
 ```
@@ -200,17 +211,6 @@ FunPark.Eq.eq?(pass_a, pass_b)
 ```
 
 ```elixir
-defmodule FunPark.Eq.Utils do
-  def contramap(f) do
-    %{
-      eq?: fn a, b -> FunPark.Eq.eq?(f.(a), f.(b)) end,
-      not_eq?: fn a, b -> FunPark.Eq.not_eq?(f.(a), f.(b)) end
-    }
-  end
-end
-```
-
-```elixir
 mansion = FunPark.Ride.make("Dark Mansion", min_age: 14, tags: [:dark])
 tea_cup = FunPark.Ride.make("Tea Cup")
 ```
@@ -229,5 +229,5 @@ FunPark.Eq.eq?(fast_pass_a, fast_pass_b)
 ```
 
 ```elixir
-
+FunPark.FastPass.eq_time().eq?.(fast_pass_a, fast_pass_b)
 ```
