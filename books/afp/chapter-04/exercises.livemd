@@ -1,0 +1,84 @@
+# AFP‑Chapter04‑Exercises
+
+## Section
+
+```elixir
+defprotocol FunPark.Monoid do
+  def empty(_)
+  def append(a, b)
+end
+```
+
+```elixir
+defmodule FunPark.Monoid.Sum do
+  defstruct value: 0
+
+  # 公开装箱函数 wrap/2
+  def wrap(_monoid_struct, value) when is_number(value) do
+    %__MODULE__{value: value}
+  end
+
+  # 公开拆箱函数 unwrap/1
+  def unwrap(%__MODULE__{value: val}) when is_number(val) do
+    val
+  end
+end
+```
+
+```elixir
+defimpl FunPark.Monoid, for: FunPark.Monoid.Sum do
+  alias FunPark.Monoid.Sum
+  
+  def empty(_), do: %Sum{}
+  
+  def append(%Sum{value: a}, %Sum{value: b}) do
+    %Sum{value: a + b}
+  end
+end
+```
+
+```elixir
+defprotocol FunPark.Foldable do
+  def fold_l(structure, transform_fn, base)
+  def fold_r(structure, transform_fn, base)
+end
+```
+
+```elixir
+defimpl FunPark.Foldable, for: List do
+  def fold_l(list, acc, func), do: :lists.foldl(func, acc, list)
+  
+  def fold_r(list, acc, func), do: :lists.foldr(func, acc, list)
+end
+```
+
+```elixir
+defmodule FunPark.Monoid.Utils do
+  alias FunPark.Monoid
+  alias FunPark.Foldable
+  alias FunPark.Monoid.Sum
+
+  def m_append(monoid, a, b) when is_struct(monoid) do
+    wrapped_a = Sum.wrap(monoid, a)
+    wrapped_b = Sum.wrap(monoid, b)
+    Monoid.append(wrapped_a, wrapped_b) |> Sum.unwrap()
+  end
+
+  def m_concat(monoid, values) when is_struct(monoid) and is_list(values) do
+    Foldable.fold_l(values, Monoid.empty(monoid), fn value, acc ->
+     	Monoid.append(acc, Sum.wrap(monoid, value))
+   	end)
+   	|> Sum.unwrap()
+  end
+end
+```
+
+```elixir
+FunPark.Monoid.Utils.m_concat(%FunPark.Monoid.Sum{}, [1,2,3,4])
+# 预期输出：10
+```
+
+```elixir
+FunPark.Monoid.Utils.m_concat(%FunPark.Monoid.Sum{}, [])
+# 预期输出：0（empty单位元）
+```
